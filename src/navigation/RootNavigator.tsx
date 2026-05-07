@@ -4,9 +4,10 @@ import { NavigationContainer } from "@react-navigation/native";
 import { useAuthStore } from "../stores/authStore";
 import AuthStack from "./AuthStack";
 import AppNavigator from "./AppNavigator";
+import AdminNavigator from "./AdminNavigator";
 
 export default function RootNavigator() {
-  const { session, isInitialized, initialize } = useAuthStore();
+  const { session, role, isInitialized, initialize } = useAuthStore();
 
   useEffect(() => {
     initialize();
@@ -22,7 +23,13 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {session ? <AppNavigator /> : <AuthStack />}
+      {!session ? (
+        <AuthStack />
+      ) : role === "admin" ? (
+        <AdminNavigator />
+      ) : (
+        <AppNavigator />
+      )}
     </NavigationContainer>
   );
 }

@@ -1,26 +1,18 @@
 const VOWELS = new Set(["a", "e", "i", "o", "u"]);
 
 /**
- * Converts a Serbian first name to its vocative form.
- * Simplified rules (covers the vast majority of Serbian names):
- *   -ica  →  -ice   (Milica → Milice, Jelica → Jelice, Danica → Danice)
- *   -a    →  -o     (Marija → Marijo, Luka → Luko, Ana → Ano)
- *   vowel →  same   (Marko, Pero, Miloje — already sound like vocative)
- *   cons. →  + "e"  (Ivan → Ivane, Petar → Petare [simplified])
+ * Conservative vocative for Serbian first names. Reliable transforms only:
+ *   vowel  → unchanged  (Marko, Pero, Ana, Marija, Nikola, Nemanja…)
+ *   cons.  → + "e"      (Ivan → Ivane, Petar → Petare)
+ *
+ * The classic -a → -o rule is intentionally skipped: it would mangle
+ * common male names ending in -a (Nikola, Nemanja, Luka, …). Leaving
+ * those names unchanged is preferable to producing wrong forms.
  */
 export function toVocative(name: string): string {
   if (!name) return name;
 
-  const lower = name.toLowerCase();
-  const last = lower[lower.length - 1];
-
-  if (lower.endsWith("ica")) {
-    return name.slice(0, -3) + "ice";
-  }
-
-  if (last === "a") {
-    return name.slice(0, -1) + "o";
-  }
+  const last = name[name.length - 1].toLowerCase();
 
   if (VOWELS.has(last)) {
     return name;

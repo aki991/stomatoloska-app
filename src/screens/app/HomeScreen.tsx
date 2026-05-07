@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   RefreshControl,
   StyleSheet,
   Image,
+  Animated,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -21,15 +23,6 @@ import { AppointmentWithService, Profile } from "../../types";
 import { HomeStackNavProp } from "../../navigation/types";
 import { Skeleton } from "../../components/Skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
-import { GradientButton } from "../../components/GradientButton";
-import { toVocative } from "../../utils/vocative";
-
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Dobro jutro";
-  if (hour < 18) return "Dobar dan";
-  return "Dobro veče";
-}
 
 function useProfile() {
   const { user } = useAuthStore();
@@ -97,8 +90,31 @@ export default function HomeScreen() {
   const { data: nextAppointment, isLoading: loadingAppt, refetch: refetchAppt } =
     useNextAppointment();
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const fabScale = useRef(new Animated.Value(1)).current;
 
-  const displayName = toVocative(profile?.first_name ?? "Pacijent");
+  const fullName =
+    profile?.first_name && profile?.last_name
+      ? `${profile.first_name} ${profile.last_name}`
+      : profile?.first_name ?? null;
+
+  const onFabPressIn = () => {
+    Animated.timing(fabScale, {
+      toValue: 0.92,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onFabPressOut = () => {
+    Animated.timing(fabScale, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onFabPress = () => navigation.navigate("Services");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -124,9 +140,9 @@ export default function HomeScreen() {
 
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <Text style={styles.greetingText}>{getGreeting()},</Text>
-            <Text style={styles.greetingName}>{displayName}!</Text>
-            <Text style={styles.headerSub}>stomatološka ordinacija</Text>
+            <Text style={styles.welcomeText}>Dobrodošli!</Text>
+            {fullName ? <Text style={styles.welcomeName}>{fullName}</Text> : null}
+            <Text style={styles.headerSub}>VenusApp stomatološka ordinacija</Text>
           </View>
           <View style={styles.headerLogoWrap}>
             <Image
@@ -151,42 +167,47 @@ export default function HomeScreen() {
       >
         {/* Next appointment */}
         <FadeInView delay={100}>
-          <Text style={styles.sectionTitle}>Naredni termin</Text>
           {loadingAppt ? (
-            <AppointmentSkeleton />
+            <>
+              <Text style={styles.sectionTitle}>Naredni termin</Text>
+              <AppointmentSkeleton />
+            </>
           ) : nextAppointment ? (
-            <TouchableOpacity
-              style={styles.appointmentCard}
-              onPress={() =>
-                navigation.navigate("AppointmentDetail", {
-                  appointmentId: nextAppointment.id,
-                })
-              }
-              activeOpacity={0.85}
-            >
-              {/* Left accent bar */}
-              <LinearGradient
-                colors={["#2D7D6E", "#4A9B8E"]}
-                style={styles.cardAccent}
-              />
-              <View style={styles.cardBody}>
-                <View style={styles.cardTopRow}>
-                  <Text style={styles.cardService} numberOfLines={1}>
-                    {nextAppointment.service?.name ?? "Pregled"}
+            <>
+              <Text style={styles.sectionTitle}>Naredni termin</Text>
+              <TouchableOpacity
+                style={styles.appointmentCard}
+                onPress={() =>
+                  navigation.navigate("AppointmentDetail", {
+                    appointmentId: nextAppointment.id,
+                  })
+                }
+                activeOpacity={0.85}
+              >
+                {/* Left accent bar */}
+                <LinearGradient
+                  colors={["#2D7D6E", "#4A9B8E"]}
+                  style={styles.cardAccent}
+                />
+                <View style={styles.cardBody}>
+                  <View style={styles.cardTopRow}>
+                    <Text style={styles.cardService} numberOfLines={1}>
+                      {nextAppointment.service?.name ?? "Pregled"}
+                    </Text>
+                    <StatusBadge status={nextAppointment.status} />
+                  </View>
+                  <Text style={styles.cardDate}>
+                    {format(new Date(nextAppointment.starts_at), "EEEE, d. MMMM yyyy", {
+                      locale: sr,
+                    })}
                   </Text>
-                  <StatusBadge status={nextAppointment.status} />
+                  <Text style={styles.cardTime}>
+                    {format(new Date(nextAppointment.starts_at), "HH:mm")} –{" "}
+                    {format(new Date(nextAppointment.ends_at), "HH:mm")}
+                  </Text>
                 </View>
-                <Text style={styles.cardDate}>
-                  {format(new Date(nextAppointment.starts_at), "EEEE, d. MMMM yyyy", {
-                    locale: sr,
-                  })}
-                </Text>
-                <Text style={styles.cardTime}>
-                  {format(new Date(nextAppointment.starts_at), "HH:mm")} –{" "}
-                  {format(new Date(nextAppointment.ends_at), "HH:mm")}
-                </Text>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </>
           ) : (
             <View style={styles.emptyCard}>
               <Image
@@ -196,13 +217,8 @@ export default function HomeScreen() {
               />
               <Text style={styles.emptyTitle}>Nemate zakazanih termina</Text>
               <Text style={styles.emptySubtitle}>
-                Zakažite termin u samo nekoliko koraka
+                Pritisnite dugme ispod da zakažete novi termin
               </Text>
-              <GradientButton
-                label="Zakaži termin"
-                onPress={() => navigation.navigate("Services")}
-                style={{ marginTop: 4 }}
-              />
             </View>
           )}
         </FadeInView>
@@ -241,21 +257,34 @@ export default function HomeScreen() {
         </FadeInView>
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate("Services")}
-        activeOpacity={0.9}
+      {/* Extended FAB */}
+      <Animated.View
+        style={[
+          styles.fab,
+          {
+            bottom: 80 + insets.bottom,
+            transform: [{ scale: fabScale }],
+          },
+        ]}
       >
-        <LinearGradient
-          colors={["#2D7D6E", "#1F5A4F"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabGradient}
+        <TouchableOpacity
+          onPress={onFabPress}
+          onPressIn={onFabPressIn}
+          onPressOut={onFabPressOut}
+          activeOpacity={1}
+          style={styles.fabTouchable}
         >
-          <Text style={styles.fabIcon}>+</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={["#2D7D6E", "#1F5A4F"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabGradient}
+          >
+            <Ionicons name="add" size={22} color="#FFFFFF" />
+            <Text style={styles.fabLabel}>Zakaži termin</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -310,18 +339,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerLeft: { flex: 1 },
-  greetingText: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "rgba(255,255,255,0.75)",
-    letterSpacing: 0.2,
-  },
-  greetingName: {
-    fontSize: 30,
+  welcomeText: {
+    fontSize: 28,
     fontWeight: "800",
     color: "#FFFFFF",
     letterSpacing: -0.5,
-    marginTop: 2,
+  },
+  welcomeName: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 4,
   },
   headerSub: {
     fontSize: 13,
@@ -331,18 +359,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   headerLogoWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    width: 80,
+    height: 80,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 16,
+    shadowColor: "#FFFFFF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
-  headerLogo: { width: 36, height: 36, borderRadius: 10 },
+  headerLogo: { width: 80, height: 80, alignSelf: "center" },
 
   // Content
-  scrollContent: { padding: 20, paddingBottom: 110 },
+  scrollContent: { padding: 20, paddingBottom: 100 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -401,7 +431,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
   },
-  emptyLogo: { width: 60, height: 60, borderRadius: 16, marginBottom: 14 },
+  emptyLogo: { width: 60, height: 60, alignSelf: "center", marginBottom: 14 },
   emptyTitle: {
     fontSize: 17,
     fontWeight: "700",
@@ -414,7 +444,6 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: 20,
   },
 
   // Quick actions
@@ -433,9 +462,9 @@ const styles = StyleSheet.create({
     borderColor: "#F0F0F0",
   },
   quickIconRing: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 72,
+    height: 72,
+    borderRadius: 18,
     backgroundColor: "#F5F9F7",
     alignItems: "center",
     justifyContent: "center",
@@ -447,8 +476,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     borderColor: "#E5E7EB",
   },
-  quickLogo: { width: 30, height: 30, borderRadius: 8 },
-  quickEmoji: { fontSize: 22 },
+  quickLogo: { width: 56, height: 56, alignSelf: "center" },
+  quickEmoji: { fontSize: 28 },
   quickLabel: {
     fontSize: 15,
     fontWeight: "700",
@@ -458,32 +487,33 @@ const styles = StyleSheet.create({
   },
   quickSub: { fontSize: 12, color: "#9CA3AF", lineHeight: 17 },
 
-  // FAB
+  // Extended FAB
   fab: {
     position: "absolute",
     right: 20,
-    bottom: 90,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    borderRadius: 28,
     shadowColor: "#1F5A4F",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 10,
   },
+  fabTouchable: {
+    borderRadius: 28,
+    overflow: "hidden",
+  },
   fabGradient: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 8,
   },
-  fabIcon: {
+  fabLabel: {
     color: "#FFFFFF",
-    fontSize: 30,
-    fontWeight: "300",
-    lineHeight: 32,
-    marginTop: -2,
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.2,
   },
 });

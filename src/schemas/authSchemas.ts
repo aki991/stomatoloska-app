@@ -29,6 +29,15 @@ export const editProfileSchema = z.object({
     (v) => !v || /^[+0-9\s\-()]{7,20}$/.test(v),
     "Unesite validan broj telefona"
   ),
+  // ISO yyyy-MM-dd or empty. Validated for "user is at least 18".
+  date_of_birth: z.string().refine((v) => {
+    if (!v) return true;
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return false;
+    const eighteenYearsAgo = new Date();
+    eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+    return d <= eighteenYearsAgo;
+  }, "Morate imati najmanje 18 godina"),
 });
 
 export const changePasswordSchema = z

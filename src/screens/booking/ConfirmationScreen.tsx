@@ -38,17 +38,29 @@ export default function ConfirmationScreen({ route, navigation }: Props) {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const payload = {
+        patient_id: user.id,
+        service_id: serviceId,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        status: "confirmed",
+      };
+      console.log("[Confirmation] inserting appointment:", {
+        userId: user.id,
+        payload,
+      });
+      const response = await supabase
         .from("appointments")
-        .insert({
-          patient_id: user.id,
-          service_id: serviceId,
-          starts_at: startsAt.toISOString(),
-          ends_at: endsAt.toISOString(),
-          status: "confirmed",
-        })
+        .insert(payload)
         .select("id")
         .single();
+      console.log("[Confirmation] insert response:", {
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+        error: response.error,
+      });
+      const { data, error } = response;
 
       if (error) {
         // EXCLUDE constraint: slot taken between our check and insert
@@ -75,7 +87,13 @@ export default function ConfirmationScreen({ route, navigation }: Props) {
             ]
           );
         } else {
-          Alert.alert("Greška", error.message ?? "Pokušajte ponovo.");
+          // DEBUG: full error breakdown so RLS / check-constraint failures are visible
+          const detail =
+            (error.code ? `[${error.code}] ` : "") +
+            (error.message ?? "Pokušajte ponovo.") +
+            (error.details ? `\nDetails: ${error.details}` : "") +
+            (error.hint ? `\nHint: ${error.hint}` : "");
+          Alert.alert("Greška pri zakazivanju", detail);
         }
         return;
       }
@@ -165,7 +183,7 @@ function Divider() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
-  content: { flex: 1, padding: 20 },
+  content: { flex: 1, padding: 20, paddingBottom: 100 },
   heading: { fontSize: 22, fontWeight: "700", color: "#111827", marginBottom: 4 },
   subheading: { fontSize: 14, color: "#6B7280", marginBottom: 24 },
   card: {

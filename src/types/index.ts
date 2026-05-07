@@ -1,3 +1,5 @@
+export type UserRole = "patient" | "admin";
+
 export interface Profile {
   id: string;
   email: string;
@@ -5,6 +7,7 @@ export interface Profile {
   last_name: string | null;
   phone: string | null;
   date_of_birth: string | null;
+  role: UserRole;
   created_at: string;
   updated_at: string;
 }
@@ -21,7 +24,7 @@ export interface Service {
 
 export interface Appointment {
   id: string;
-  patient_id: string;
+  patient_id: string | null;
   service_id: string | null;
   starts_at: string;
   ends_at: string;
@@ -30,6 +33,9 @@ export interface Appointment {
   cancelled_at: string | null;
   cancelled_by: string | null;
   cancellation_reason: string | null;
+  walk_in_name: string | null;
+  walk_in_phone: string | null;
+  admin_notes: string | null;
   created_at: string;
 }
 

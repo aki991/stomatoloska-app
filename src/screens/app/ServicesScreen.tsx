@@ -20,15 +20,32 @@ function useServices() {
     queryKey: ["services"],
     queryFn: async () => {
       if (__DEV__) await new Promise<void>((r) => setTimeout(r, 800));
-      const { data, error } = await supabase
+      const response = await supabase
         .from("services")
         .select("*")
         .eq("is_active", true)
         .order("name");
-      if (error) throw error;
-      return data ?? [];
+      // DEBUG
+      console.log("[ServicesScreen] supabase services response:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: response.error,
+        rows: response.data?.length,
+      });
+      if (response.error) throw response.error;
+      return response.data ?? [];
     },
   });
+}
+
+// DEBUG: build a verbose error string from a Supabase / PostgrestError
+function describeError(err: any): string {
+  if (!err) return "Unknown";
+  const code = err.code ? `[${err.code}] ` : "";
+  const msg = err.message ?? String(err);
+  const details = err.details ? `\nDetails: ${err.details}` : "";
+  const hint = err.hint ? `\nHint: ${err.hint}` : "";
+  return `${code}${msg}${details}${hint}`;
 }
 
 function groupByCategory(services: Service[]): [string, Service[]][] {
@@ -57,11 +74,15 @@ export default function ServicesScreen() {
   }
 
   if (error) {
+    if (__DEV__) console.log("[ServicesScreen] error rendered:", error);
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>Greška pri učitavanju</Text>
+          <Text style={styles.errorDetail} selectable>
+            {describeError(error)}
+          </Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
             <Text style={styles.retryText}>Pokušaj ponovo</Text>
           </TouchableOpacity>
@@ -169,7 +190,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   errorIcon: { fontSize: 32, marginBottom: 12 },
-  errorTitle: { color: "#374151", fontWeight: "600", marginBottom: 12 },
+  errorTitle: { color: "#374151", fontWeight: "600", marginBottom: 8 },
+  errorDetail: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: "monospace",
+    textAlign: "center",
+    marginBottom: 16,
+    paddingHorizontal: 12,
+  },
   retryButton: {
     backgroundColor: "#2D7D6E",
     borderRadius: 10,
@@ -177,7 +206,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   retryText: { color: "#FFFFFF", fontWeight: "600" },
-  listContent: { padding: 20, paddingTop: 12 },
+  listContent: { padding: 20, paddingTop: 12, paddingBottom: 100 },
   categorySection: { marginBottom: 24 },
   categoryLabel: {
     fontSize: 12,

@@ -1,5 +1,5 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { MaterialTopTabNavigationProp } from "@react-navigation/material-top-tabs";
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -59,7 +59,37 @@ export type TerminiStackParamList = {
   AppointmentDetail: { appointmentId: string };
 };
 
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export type AdminTabParamList = {
+  Dashboard: undefined;
+  Kalendar: undefined;
+  Usluge: undefined;
+  Profil: undefined;
+};
+
+export type AdminDashboardStackParamList = {
+  DashboardMain: undefined;
+  AdminAppointmentDetail: { appointmentId: string };
+  AdminBooking: undefined;
+};
+
+export type AdminCalendarStackParamList = {
+  CalendarMain: undefined;
+  AdminAppointmentDetail: { appointmentId: string };
+};
+
+export type AdminServicesStackParamList = {
+  ServicesMain: undefined;
+  EditService: { serviceId?: string };
+};
+
+export type AdminProfileStackParamList = {
+  ProfilMain: undefined;
+};
+
 export type AuthStackNavProp = NativeStackNavigationProp<AuthStackParamList>;
-export type AppTabNavProp = BottomTabNavigationProp<AppTabParamList>;
+export type AppTabNavProp = MaterialTopTabNavigationProp<AppTabParamList>;
 export type HomeStackNavProp = NativeStackNavigationProp<HomeStackParamList>;
 export type TerminiStackNavProp = NativeStackNavigationProp<TerminiStackParamList>;
+export type AdminDashboardStackNavProp = NativeStackNavigationProp<AdminDashboardStackParamList>;

@@ -18,11 +18,14 @@ function useWorkingHours() {
   return useQuery<WorkingHours[]>({
     queryKey: ["working_hours"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("working_hours")
-        .select("*");
-      if (error) throw error;
-      return data ?? [];
+      const response = await supabase.from("working_hours").select("*");
+      console.log("[DateSelection] working_hours response:", {
+        status: response.status,
+        error: response.error,
+        rows: response.data?.length,
+      });
+      if (response.error) throw response.error;
+      return response.data ?? [];
     },
     staleTime: 1000 * 60 * 60,
   });
@@ -32,43 +35,80 @@ function useTimeOffs() {
   return useQuery<TimeOff[]>({
     queryKey: ["time_off", TODAY],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const response = await supabase
         .from("time_off")
         .select("*")
         .gte("end_date", TODAY)
         .lte("start_date", MAX_DATE);
-      if (error) throw error;
-      return data ?? [];
+      console.log("[DateSelection] time_off response:", {
+        status: response.status,
+        error: response.error,
+        rows: response.data?.length,
+      });
+      if (response.error) throw response.error;
+      return response.data ?? [];
     },
     staleTime: 1000 * 60 * 30,
   });
 }
 
+/** "HH:MM" or "HH:MM:SS" → minutes since midnight */
+function toMin(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// DEBUG: build a verbose error string from a Supabase / PostgrestError
+function describeError(err: any): string {
+  if (!err) return "Unknown";
+  const code = err.code ? `[${err.code}] ` : "";
+  const msg = err.message ?? String(err);
+  const details = err.details ? `\nDetails: ${err.details}` : "";
+  const hint = err.hint ? `\nHint: ${err.hint}` : "";
+  return `${code}${msg}${details}${hint}`;
+}
+
 function buildDisabledDates(
   workingHours: WorkingHours[],
-  timeOffs: TimeOff[]
+  timeOffs: TimeOff[],
+  durationMin: number
 ): Record<string, { disabled: true; disableTouchEvent: true }> {
   const disabled: Record<string, { disabled: true; disableTouchEvent: true }> = {};
-  const closedDays = new Set<number>();
 
-  if (workingHours.length > 0) {
-    workingHours.forEach((wh) => {
-      if (wh.is_closed) closedDays.add(wh.day_of_week);
-    });
-  } else {
-    // default: closed on Sundays (0)
-    closedDays.add(0);
-  }
+  // A day is OPEN only if it has a row AND is_closed === false.
+  // Anything else (is_closed=true OR missing row) is treated as closed.
+  const openDays = new Set<number>(
+    workingHours.filter((wh) => !wh.is_closed).map((wh) => wh.day_of_week)
+  );
+
+  // Conservative fallback: if working_hours has no rows at all (data not seeded),
+  // disable only Sunday so the screen remains usable.
+  const useFallback = workingHours.length === 0;
+  const fallbackClosed = new Set<number>([0]);
 
   const mark = { disabled: true as const, disableTouchEvent: true as const };
 
-  // Mark closed weekdays across the 60-day range
   const cursor = new Date();
   for (let i = 0; i <= 60; i++) {
     const d = addDays(cursor, i);
     const dow = d.getDay();
-    if (closedDays.has(dow)) {
+    const isClosed = useFallback ? fallbackClosed.has(dow) : !openDays.has(dow);
+    if (isClosed) {
       disabled[format(d, "yyyy-MM-dd")] = mark;
+    }
+  }
+
+  // Today: even if the clinic is open, disable if no slot fits before close.
+  // Mirrors the 2h booking buffer used in TimeSelectionScreen.
+  const now = new Date();
+  const todayKey = format(now, "yyyy-MM-dd");
+  const todayHours = workingHours.find((wh) => wh.day_of_week === now.getDay());
+  if (!disabled[todayKey] && todayHours && !todayHours.is_closed) {
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const earliestStart = Math.max(toMin(todayHours.opens_at), nowMin + 120);
+    const latestStart = toMin(todayHours.closes_at) - durationMin;
+    if (latestStart < earliestStart) {
+      disabled[todayKey] = mark;
     }
   }
 
@@ -88,15 +128,18 @@ function buildDisabledDates(
 
 export default function DateSelectionScreen({ route, navigation }: Props) {
   const { serviceId, serviceName, durationMinutes, price } = route.params;
-  const { data: workingHours, isLoading: loadingWH } = useWorkingHours();
-  const { data: timeOffs, isLoading: loadingTO } = useTimeOffs();
+  const whQ = useWorkingHours();
+  const toQ = useTimeOffs();
+  const workingHours = whQ.data;
+  const timeOffs = toQ.data;
 
   const markedDates = useMemo(() => {
     if (!workingHours || !timeOffs) return {};
-    return buildDisabledDates(workingHours, timeOffs);
-  }, [workingHours, timeOffs]);
+    return buildDisabledDates(workingHours, timeOffs, durationMinutes);
+  }, [workingHours, timeOffs, durationMinutes]);
 
-  const isLoading = loadingWH || loadingTO;
+  const isLoading = whQ.isLoading || toQ.isLoading;
+  const queryError = whQ.error ?? toQ.error;
 
   function onDayPress(day: DateData) {
     if (markedDates[day.dateString]?.disabled) return;
@@ -119,6 +162,13 @@ export default function DateSelectionScreen({ route, navigation }: Props) {
       {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#2D7D6E" />
+        </View>
+      ) : queryError ? (
+        <View style={styles.centered}>
+          <Text style={styles.errorTitle}>Greška pri učitavanju</Text>
+          <Text style={styles.errorDetail} selectable>
+            {describeError(queryError)}
+          </Text>
         </View>
       ) : (
         <Calendar
@@ -148,12 +198,12 @@ export default function DateSelectionScreen({ route, navigation }: Props) {
 
       <View style={styles.legend}>
         <View style={styles.legendRow}>
-          <View style={[styles.legendDot, { backgroundColor: "#D1D5DB" }]} />
-          <Text style={styles.legendText}>Ordinacija ne radi</Text>
+          <View style={styles.legendCircle} />
+          <Text style={styles.legendText}>Izabrani datum</Text>
         </View>
         <View style={styles.legendRow}>
-          <View style={[styles.legendDot, { backgroundColor: "#2D7D6E" }]} />
-          <Text style={styles.legendText}>Izabrani datum</Text>
+          <Text style={styles.legendSampleDisabled}>15</Text>
+          <Text style={styles.legendText}>Neradni dan / prošlost</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -165,15 +215,35 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
   service: { fontSize: 18, fontWeight: "700", color: "#111827" },
   subtitle: { fontSize: 13, color: "#6B7280", marginTop: 2 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
+  errorTitle: { fontSize: 16, fontWeight: "700", color: "#374151", marginBottom: 8 },
+  errorDetail: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: "monospace",
+    textAlign: "center",
+  },
   legend: {
     flexDirection: "row",
     gap: 20,
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 100,
+    flexWrap: "wrap",
   },
-  legendRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  legendCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#2D7D6E",
+  },
+  legendSampleDisabled: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#D1D5DB",
+    minWidth: 16,
+    textAlign: "center",
+  },
   legendText: { fontSize: 12, color: "#6B7280" },
 });

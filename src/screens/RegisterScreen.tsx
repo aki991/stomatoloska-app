@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 6,
   },
-  logo: { width: 72, height: 72, borderRadius: 18 },
+  logo: { width: 72, height: 72, alignSelf: "center" },
   welcomeSmall: {
     fontSize: 15,
     fontWeight: "300",

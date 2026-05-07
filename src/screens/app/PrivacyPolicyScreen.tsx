@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SECTIONS = [
   {
@@ -34,9 +34,15 @@ const SECTIONS = [
 ];
 
 export default function PrivacyPolicyScreen() {
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
+      >
         <Text style={styles.updated}>Poslednje ažuriranje: 1. januar 2025.</Text>
 
         {SECTIONS.map((s) => (
@@ -52,7 +58,7 @@ export default function PrivacyPolicyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
-  scroll: { padding: 20, paddingBottom: 40 },
+  scroll: { padding: 20 },
   updated: { fontSize: 12, color: "#9CA3AF", marginBottom: 20 },
   section: {
     backgroundColor: "#FFFFFF",

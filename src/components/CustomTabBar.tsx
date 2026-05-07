@@ -4,22 +4,32 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
   Animated,
 } from "react-native";
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { BlurView } from "expo-blur";
+import { MaterialTopTabBarProps } from "@react-navigation/material-top-tabs";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TAB_ICONS: Record<string, string> = {
-  Home:    "⌂",
-  Termini: "📅",
-  Profil:  "◉",
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
+  // Patient tabs
+  Home:      { active: "home",     inactive: "home-outline" },
+  Termini:   { active: "calendar", inactive: "calendar-outline" },
+  Profil:    { active: "person",   inactive: "person-outline" },
+  // Admin tabs
+  Dashboard: { active: "home",     inactive: "home-outline" },
+  Kalendar:  { active: "calendar", inactive: "calendar-outline" },
+  Usluge:    { active: "medkit",   inactive: "medkit-outline" },
 };
 
 const TAB_LABELS: Record<string, string> = {
-  Home:    "Početna",
-  Termini: "Termini",
-  Profil:  "Profil",
+  Home:      "Početna",
+  Termini:   "Termini",
+  Profil:    "Profil",
+  Dashboard: "Početna",
+  Kalendar:  "Kalendar",
+  Usluge:    "Usluge",
 };
 
 function TabItem({
@@ -32,7 +42,8 @@ function TabItem({
   onPress: () => void;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const icon = TAB_ICONS[name] ?? "●";
+  const icons = TAB_ICONS[name] ?? { active: "ellipse", inactive: "ellipse-outline" };
+  const iconName = isFocused ? icons.active : icons.inactive;
   const label = TAB_LABELS[name] ?? name;
 
   useEffect(() => {
@@ -68,7 +79,11 @@ function TabItem({
           { transform: [{ scale }] },
         ]}
       >
-        <Text style={[styles.icon, isFocused && styles.iconActive]}>{icon}</Text>
+        <Ionicons
+          name={iconName}
+          size={26}
+          color={isFocused ? "#2D7D6E" : "#9CA3AF"}
+        />
       </Animated.View>
       <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
         {label}
@@ -77,36 +92,35 @@ function TabItem({
   );
 }
 
-export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+export function CustomTabBar({ state, navigation }: MaterialTopTabBarProps) {
+  const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
-      <BlurView intensity={75} tint="light" style={styles.blur}>
-        <View style={styles.inner}>
-          {state.routes.map((route, index) => {
-            const isFocused = state.index === index;
+      <View style={[styles.inner, { paddingBottom: insets.bottom }]}>
+        {state.routes.map((route, index) => {
+          const isFocused = state.index === index;
 
-            function onPress() {
-              const event = navigation.emit({
-                type: "tabPress",
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
+          function onPress() {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.jumpTo(route.name as never);
             }
+          }
 
-            return (
-              <TabItem
-                key={route.key}
-                name={route.name}
-                isFocused={isFocused}
-                onPress={onPress}
-              />
-            );
-          })}
-        </View>
-      </BlurView>
+          return (
+            <TabItem
+              key={route.key}
+              name={route.name}
+              isFocused={isFocused}
+              onPress={onPress}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -117,17 +131,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-  },
-  blur: {
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "rgba(45,125,110,0.08)",
-    overflow: "hidden",
+    borderTopColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 12,
   },
   inner: {
     flexDirection: "row",
-    paddingBottom: Platform.OS === "ios" ? 24 : 10,
     paddingTop: 8,
-    backgroundColor: "rgba(255,255,255,0.88)",
+    backgroundColor: "#FFFFFF",
   },
   tabItem: {
     flex: 1,
@@ -154,8 +170,6 @@ const styles = StyleSheet.create({
   iconWrapActive: {
     backgroundColor: "#F5F9F7",
   },
-  icon: { fontSize: 20, color: "#9CA3AF" },
-  iconActive: { color: "#2D7D6E" },
   tabLabel: { fontSize: 11, color: "#9CA3AF", fontWeight: "500" },
   tabLabelActive: { color: "#2D7D6E", fontWeight: "700" },
 });

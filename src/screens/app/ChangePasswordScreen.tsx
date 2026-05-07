@@ -5,7 +5,7 @@ import {
   ScrollView,
   StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,7 @@ type Props = NativeStackScreenProps<ProfileStackParamList, "ChangePassword">;
 
 export default function ChangePasswordScreen({ navigation }: Props) {
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   const {
     control,
@@ -57,7 +58,10 @@ export default function ChangePasswordScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hint}>
@@ -152,7 +156,7 @@ function Field({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
-  scroll: { padding: 20, paddingBottom: 40 },
+  scroll: { padding: 20 },
 
   hint: {
     backgroundColor: "#F5F9F7",

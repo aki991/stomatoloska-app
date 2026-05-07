@@ -13,7 +13,7 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -58,6 +58,7 @@ export default function AppointmentDetailScreen({ route, navigation }: Props) {
   const { appointmentId } = route.params;
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const { data: appt, isLoading, error } = useAppointment(appointmentId);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -141,7 +142,12 @@ export default function AppointmentDetailScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
+      >
         {/* Service + Status */}
         <View style={styles.heroCard}>
           <LinearGradient
@@ -352,7 +358,7 @@ function Divider() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
-  scroll: { padding: 20, paddingBottom: 40 },
+  scroll: { padding: 20 },
 
   errorText: { fontSize: 16, color: "#374151", marginBottom: 16 },
   backBtn: {

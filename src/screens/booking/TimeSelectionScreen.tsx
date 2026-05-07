@@ -27,6 +27,16 @@ function toMin(t: string): number {
   return h * 60 + m;
 }
 
+// DEBUG: build a verbose error string from a Supabase / PostgrestError
+function describeError(err: any): string {
+  if (!err) return "Unknown";
+  const code = err.code ? `[${err.code}] ` : "";
+  const msg = err.message ?? String(err);
+  const details = err.details ? `\nDetails: ${err.details}` : "";
+  const hint = err.hint ? `\nHint: ${err.hint}` : "";
+  return `${code}${msg}${details}${hint}`;
+}
+
 /**
  * Generate candidate slot times every 15 min.
  * Last slot must end by closesAt, so: slot_start + duration ≤ closesAt.
@@ -110,13 +120,19 @@ function useSlotData(selectedDate: string) {
   const whQuery = useQuery<WorkingHours | null>({
     queryKey: ["working_hours_day", dow],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const r = await supabase
         .from("working_hours")
         .select("*")
         .eq("day_of_week", dow)
         .maybeSingle();
-      if (error) throw error;
-      return data;
+      console.log("[TimeSelection] working_hours_day response:", {
+        dow,
+        status: r.status,
+        error: r.error,
+        row: r.data,
+      });
+      if (r.error) throw r.error;
+      return r.data;
     },
     staleTime: 1000 * 60 * 60, // working hours change rarely
   });
@@ -124,13 +140,19 @@ function useSlotData(selectedDate: string) {
   const toQuery = useQuery<TimeOff[]>({
     queryKey: ["time_off_day", selectedDate],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const r = await supabase
         .from("time_off")
         .select("*")
         .lte("start_date", selectedDate)
         .gte("end_date", selectedDate);
-      if (error) throw error;
-      return data ?? [];
+      console.log("[TimeSelection] time_off_day response:", {
+        selectedDate,
+        status: r.status,
+        error: r.error,
+        rows: r.data?.length,
+      });
+      if (r.error) throw r.error;
+      return r.data ?? [];
     },
     staleTime: 1000 * 60 * 30,
   });
@@ -138,15 +160,21 @@ function useSlotData(selectedDate: string) {
   const apptQuery = useQuery<Appointment[]>({
     queryKey: ["appointments_day", selectedDate],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const r = await supabase
         .from("appointments")
         .select("id, starts_at, ends_at, status")
         .in("status", ["confirmed", "pending"])
         // Use UTC-converted boundaries so the range is correct regardless of server timezone
         .gte("starts_at", dayStartISO)
         .lte("starts_at", dayEndISO);
-      if (error) throw error;
-      return (data ?? []) as Appointment[];
+      console.log("[TimeSelection] appointments_day response:", {
+        selectedDate,
+        status: r.status,
+        error: r.error,
+        rows: r.data?.length,
+      });
+      if (r.error) throw r.error;
+      return (r.data ?? []) as Appointment[];
     },
     staleTime: 0,          // always consider stale – slots change frequently
     refetchOnMount: true,
@@ -173,6 +201,8 @@ export default function TimeSelectionScreen({ route, navigation }: Props) {
 
   const isLoading =
     whQuery.isLoading || toQuery.isLoading || apptQuery.isLoading;
+
+  const queryError = whQuery.error ?? toQuery.error ?? apptQuery.error;
 
   const isFetching = apptQuery.isFetching && !apptQuery.isLoading;
 
@@ -231,6 +261,13 @@ export default function TimeSelectionScreen({ route, navigation }: Props) {
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#2D7D6E" />
           <Text style={styles.loadingText}>Učitavanje slobodnih termina...</Text>
+        </View>
+      ) : queryError ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>Greška pri učitavanju</Text>
+          <Text style={styles.errorDetail} selectable>
+            {describeError(queryError)}
+          </Text>
         </View>
       ) : slots.length === 0 ? (
         <View style={styles.centered}>
@@ -301,6 +338,13 @@ const styles = StyleSheet.create({
   loadingText: { color: "#6B7280", marginTop: 12 },
   emptyEmoji: { fontSize: 40, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: "600", color: "#374151", textAlign: "center" },
+  errorDetail: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: "monospace",
+    textAlign: "center",
+    marginTop: 8,
+  },
   emptySubtitle: { fontSize: 13, color: "#6B7280", marginTop: 4, textAlign: "center" },
   backBtn: {
     marginTop: 20,
@@ -310,7 +354,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   backBtnText: { color: "#FFFFFF", fontWeight: "600" },
-  grid: { padding: 20 },
+  grid: { padding: 20, paddingBottom: 100 },
   availableLabel: { fontSize: 13, color: "#6B7280", marginBottom: 14, fontWeight: "500" },
   slotsContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   slot: {

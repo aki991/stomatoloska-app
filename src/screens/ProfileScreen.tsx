@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
@@ -68,19 +69,30 @@ export default function ProfileScreen() {
 
         {/* Avatar + basic info */}
         <View style={styles.avatarCard}>
-          <View style={styles.avatar}>
+          <LinearGradient
+            colors={["#2D7D6E", "#4A9B8E"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
             <Text style={styles.avatarLetter}>
               {profile?.first_name?.[0]?.toUpperCase() ??
                 user?.email?.[0]?.toUpperCase() ??
                 "?"}
             </Text>
-          </View>
+          </LinearGradient>
           <Text style={styles.displayName}>
             {profile?.first_name && profile?.last_name
               ? `${profile.first_name} ${profile.last_name}`
               : profile?.first_name ?? "Korisnik"}
           </Text>
-          <Text style={styles.displayEmail}>{user?.email}</Text>
+          <Text
+            style={styles.displayEmail}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {user?.email}
+          </Text>
         </View>
 
         {/* Profile details */}
@@ -91,8 +103,6 @@ export default function ProfileScreen() {
             <ProfileRow label="Ime" value={profile?.first_name ?? null} />
             <Sep />
             <ProfileRow label="Prezime" value={profile?.last_name ?? null} />
-            <Sep />
-            <ProfileRow label="Email" value={profile?.email ?? user?.email ?? null} />
             <Sep />
             <ProfileRow label="Telefon" value={profile?.phone ?? null} />
             <Sep />
@@ -161,7 +171,13 @@ function ProfileRow({ label, value }: { label: string; value: string | null }) {
   return (
     <View style={styles.profileRow}>
       <Text style={styles.profileRowLabel}>{label}</Text>
-      <Text style={styles.profileRowValue}>{value ?? "—"}</Text>
+      <Text
+        style={styles.profileRowValue}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        {value ?? "—"}
+      </Text>
     </View>
   );
 }
@@ -191,7 +207,7 @@ function Sep() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 100 },
 
   pageTitle: { fontSize: 26, fontWeight: "800", color: "#111827", marginBottom: 20 },
 
@@ -225,7 +241,12 @@ const styles = StyleSheet.create({
   },
   avatarLetter: { color: "#FFFFFF", fontSize: 32, fontWeight: "700" },
   displayName: { fontSize: 20, fontWeight: "700", color: "#111827", marginBottom: 4 },
-  displayEmail: { fontSize: 13, color: "#6B7280" },
+  displayEmail: {
+    fontSize: 13,
+    color: "#6B7280",
+    maxWidth: "100%",
+    paddingHorizontal: 8,
+  },
 
   sectionLabel: {
     fontSize: 11,
@@ -258,7 +279,14 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   profileRowLabel: { fontSize: 14, color: "#6B7280" },
-  profileRowValue: { fontSize: 14, color: "#111827", fontWeight: "500", maxWidth: "60%" },
+  profileRowValue: {
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "500",
+    maxWidth: "65%",
+    textAlign: "right",
+    flexShrink: 1,
+  },
 
   menuRow: {
     flexDirection: "row",
@@ -279,6 +307,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: "center",
+    marginBottom: 30,
   },
   signOutText: { color: "#DC2626", fontWeight: "700", fontSize: 15 },
 });
