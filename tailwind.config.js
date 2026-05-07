@@ -10,14 +10,12 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#2563EB",
-          light: "#3B82F6",
-          dark: "#1D4ED8",
+          DEFAULT: "#2D7D6E",
+          light: "#4A9B8E",
+          dark: "#1F5A4F",
         },
-        dental: {
-          blue: "#0EA5E9",
-          teal: "#14B8A6",
-        },
+        accent: "#7FB8AA",
+        surface: "#F5F9F7",
       },
     },
   },

@@ -1,41 +1,22 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { AppTabParamList } from "./types";
-import HomeScreen from "../screens/HomeScreen";
-import AppointmentsScreen from "../screens/AppointmentsScreen";
-import ProfileScreen from "../screens/ProfileScreen";
+import HomeStack from "./HomeStack";
+import TerminiStack from "./TerminiStack";
+import ProfileStack from "./ProfileStack";
+import { CustomTabBar } from "../components/CustomTabBar";
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 export default function AppNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: "#2563EB",
-        tabBarInactiveTintColor: "#9CA3AF",
-        tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: "#E5E7EB",
-          paddingBottom: 4,
-        },
-      }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarLabel: "Početna" }}
-      />
-      <Tab.Screen
-        name="Termini"
-        component={AppointmentsScreen}
-        options={{ tabBarLabel: "Termini" }}
-      />
-      <Tab.Screen
-        name="Profil"
-        component={ProfileScreen}
-        options={{ tabBarLabel: "Profil" }}
-      />
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Termini" component={TerminiStack} />
+      <Tab.Screen name="Profil" component={ProfileStack} />
     </Tab.Navigator>
   );
 }

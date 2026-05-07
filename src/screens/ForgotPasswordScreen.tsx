@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Alert,
+  StyleSheet,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigation } from "@react-navigation/native";
@@ -17,6 +19,10 @@ import {
 } from "../schemas/authSchemas";
 import { supabase } from "../services/supabase";
 import { AuthStackNavProp } from "../navigation/types";
+import { PremiumInput } from "../components/PremiumInput";
+import { GradientButton } from "../components/GradientButton";
+import { ScreenWrapper } from "../components/ScreenWrapper";
+import { translateError } from "../utils/errorMessages";
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation<AuthStackNavProp>();
@@ -35,7 +41,7 @@ export default function ForgotPasswordScreen() {
     const { error } = await supabase.auth.resetPasswordForEmail(data.email);
     setIsLoading(false);
     if (error) {
-      Alert.alert("Greška", error.message);
+      Alert.alert("Greška", translateError(error.message));
     } else {
       Alert.alert(
         "Email poslat",
@@ -46,56 +52,88 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-white px-6"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View className="flex-1 justify-center">
-        <TouchableOpacity className="mb-8" onPress={() => navigation.goBack()}>
-          <Text className="text-primary text-base">← Nazad</Text>
-        </TouchableOpacity>
-
-        <Text className="text-3xl font-bold text-gray-900 mb-2">
-          Zaboravljena lozinka
-        </Text>
-        <Text className="text-gray-500 mb-8">
-          Unesite email i poslaćemo vam link za resetovanje.
-        </Text>
-
-        <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Email</Text>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                className="border border-gray-300 rounded-xl px-4 py-3 text-gray-900 bg-gray-50"
-                placeholder="vas@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-              />
-            )}
-          />
-          {errors.email && (
-            <Text className="text-red-500 text-xs mt-1">
-              {errors.email.message}
-            </Text>
-          )}
-        </View>
-
-        <TouchableOpacity
-          className="bg-primary rounded-xl py-4 items-center"
-          onPress={handleSubmit(onSubmit)}
-          disabled={isLoading}
+    <SafeAreaView style={styles.safeArea}>
+      <ScreenWrapper>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <Text className="text-white font-semibold text-base">
-            {isLoading ? "Slanje..." : "Pošalji link"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+          >
+            <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+              <Text style={styles.backText}>← Nazad</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.title}>Zaboravljena{"\n"}lozinka?</Text>
+            <Text style={styles.subtitle}>
+              Unesite email i poslaćemo vam link za resetovanje.
+            </Text>
+
+            <View style={styles.formCard}>
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <PremiumInput
+                    label="Email adresa"
+                    placeholder="vas@email.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={errors.email?.message}
+                  />
+                )}
+              />
+
+              <GradientButton
+                label="Pošalji link"
+                onPress={handleSubmit(onSubmit)}
+                loading={isLoading}
+                style={{ marginTop: 4 }}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ScreenWrapper>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, padding: 28, paddingTop: 20 },
+  backBtn: { marginBottom: 32, alignSelf: "flex-start" },
+  backText: { fontSize: 15, color: "#2D7D6E", fontWeight: "600" },
+  title: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#1A1A1A",
+    letterSpacing: -0.5,
+    marginBottom: 10,
+    lineHeight: 40,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: "#9CA3AF",
+    fontWeight: "400",
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  formCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 4,
+  },
+});

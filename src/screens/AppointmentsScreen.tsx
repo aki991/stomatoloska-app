@@ -4,20 +4,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../services/supabase";
 import { useAuthStore } from "../stores/authStore";
-import { Appointment } from "../types";
-import { format } from "date-fns";
+import { AppointmentWithService } from "../types";
+import { format, differenceInMinutes } from "date-fns";
 import { sr } from "date-fns/locale";
 
 function useAppointments() {
   const { user } = useAuthStore();
-  return useQuery<Appointment[]>({
+  return useQuery<AppointmentWithService[]>({
     queryKey: ["appointments", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("*")
+        .select("*, service:services(*)")
         .eq("patient_id", user!.id)
-        .order("scheduled_at", { ascending: true });
+        .order("starts_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
@@ -25,14 +25,14 @@ function useAppointments() {
   });
 }
 
-const statusLabel: Record<Appointment["status"], string> = {
+const statusLabel: Record<string, string> = {
   pending: "Na čekanju",
   confirmed: "Potvrđen",
   cancelled: "Otkazan",
   completed: "Završen",
 };
 
-const statusColor: Record<Appointment["status"], string> = {
+const statusColor: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   confirmed: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
@@ -65,29 +65,46 @@ export default function AppointmentsScreen() {
               </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-100 shadow-sm">
-              <View className="flex-row justify-between items-start mb-2">
-                <Text className="font-semibold text-gray-900">
-                  {format(new Date(item.scheduled_at), "EEEE, d. MMMM yyyy", {
+          renderItem={({ item }) => {
+            const durationMin = differenceInMinutes(
+              new Date(item.ends_at),
+              new Date(item.starts_at)
+            );
+            return (
+              <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-100 shadow-sm">
+                <View className="flex-row justify-between items-start mb-2">
+                  <Text className="font-semibold text-gray-900 flex-1 mr-2">
+                    {item.service?.name ?? "Pregled"}
+                  </Text>
+                  <View
+                    className={`px-2 py-1 rounded-full ${
+                      statusColor[item.status]?.split(" ")[0] ?? "bg-gray-100"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-medium ${
+                        statusColor[item.status]?.split(" ")[1] ?? "text-gray-600"
+                      }`}
+                    >
+                      {statusLabel[item.status] ?? item.status}
+                    </Text>
+                  </View>
+                </View>
+                <Text className="text-blue-600 font-medium text-sm">
+                  {format(new Date(item.starts_at), "EEEE, d. MMMM yyyy", {
                     locale: sr,
                   })}
                 </Text>
-                <View className={`px-2 py-1 rounded-full ${statusColor[item.status].split(" ")[0]}`}>
-                  <Text className={`text-xs font-medium ${statusColor[item.status].split(" ")[1]}`}>
-                    {statusLabel[item.status]}
-                  </Text>
-                </View>
+                <Text className="text-gray-500 text-sm mt-1">
+                  {format(new Date(item.starts_at), "HH:mm")} •{" "}
+                  {durationMin} min
+                </Text>
+                {item.notes && (
+                  <Text className="text-gray-400 text-xs mt-2">{item.notes}</Text>
+                )}
               </View>
-              <Text className="text-gray-500 text-sm">
-                {format(new Date(item.scheduled_at), "HH:mm")} •{" "}
-                {item.duration_minutes} min
-              </Text>
-              {item.notes && (
-                <Text className="text-gray-400 text-xs mt-2">{item.notes}</Text>
-              )}
-            </View>
-          )}
+            );
+          }}
         />
       )}
     </SafeAreaView>
