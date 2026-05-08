@@ -1,13 +1,16 @@
-import React, { useLayoutEffect } from "react";
+import { useLayoutEffect } from "react";
 import { TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { AdminDashboardStackParamList } from "../../../navigation/types";
-import { confirmAlert } from "../../../utils/alert";
+import React from "react";
+import { confirmAlert } from "../../utils/alert";
 
-type Nav = NativeStackNavigationProp<AdminDashboardStackParamList>;
+// Loose nav type so it works with any AuthStack screen (params shape varies per screen).
+type Nav = {
+  setOptions: (options: Record<string, unknown>) => void;
+  navigate: (...args: any[]) => void;
+};
 
-export function useBookingExitButton(navigation: Nav, hide = false) {
+export function useGuestExitButton(navigation: Nav, hide = false) {
   useLayoutEffect(() => {
     if (hide) {
       navigation.setOptions({ headerRight: undefined });
@@ -23,7 +26,7 @@ export function useBookingExitButton(navigation: Nav, hide = false) {
             confirmAlert(
               "Prekini zakazivanje",
               "Da li ste sigurni da želite da prekinete zakazivanje?",
-              () => navigation.navigate("DashboardMain"),
+              () => navigation.navigate("Login"),
               "Da, prekini"
             )
           }

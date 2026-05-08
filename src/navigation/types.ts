@@ -5,6 +5,49 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  // ── Guest booking flow ──────────────────────────────────────────────────
+  GuestInfo: undefined;
+  GuestService: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+  };
+  GuestDate: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    serviceId: string;
+    serviceName: string;
+    durationMinutes: number;
+    price: number;
+  };
+  GuestTime: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    serviceId: string;
+    serviceName: string;
+    durationMinutes: number;
+    price: number;
+    selectedDate: string;
+  };
+  GuestConfirm: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    serviceId: string;
+    serviceName: string;
+    durationMinutes: number;
+    price: number;
+    selectedDate: string;
+    selectedTime: string;
+  };
+  GuestSuccess: {
+    firstName: string;
+    serviceName: string;
+    selectedDate: string;
+    selectedTime: string;
+  };
 };
 
 export type AppTabParamList = {

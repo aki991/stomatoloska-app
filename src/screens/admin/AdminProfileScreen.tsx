@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
   StyleSheet,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -13,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { useAuthStore } from "../../stores/authStore";
+import { confirmAlert } from "../../utils/alert";
 
 const REMEMBERED_EMAIL_KEY = "stomapp:remembered_email";
 
@@ -21,19 +21,17 @@ export default function AdminProfileScreen() {
   const insets = useSafeAreaInsets();
 
   const handleSignOut = () => {
-    Alert.alert("Odjava", "Da li ste sigurni da se želite odjaviti?", [
-      { text: "Otkaži", style: "cancel" },
-      {
-        text: "Odjavi se",
-        style: "destructive",
-        onPress: async () => {
-          if (user?.email) {
-            await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, user.email);
-          }
-          signOut();
-        },
+    confirmAlert(
+      "Odjava",
+      "Da li ste sigurni da se želite odjaviti?",
+      async () => {
+        if (user?.email) {
+          await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, user.email);
+        }
+        signOut();
       },
-    ]);
+      "Odjavi se"
+    );
   };
 
   const fullName = profile?.first_name && profile?.last_name

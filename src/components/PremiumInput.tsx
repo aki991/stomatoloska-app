@@ -6,18 +6,21 @@ import {
   TextInputProps,
   StyleSheet,
   Animated,
+  ViewStyle,
+  StyleProp,
 } from "react-native";
 
 interface Props extends TextInputProps {
   label: string;
   error?: string;
+  wrapperStyle?: StyleProp<ViewStyle>;
 }
 
-export function PremiumInput({ label, error, style, ...rest }: Props) {
+export function PremiumInput({ label, error, style, wrapperStyle, ...rest }: Props) {
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, wrapperStyle]}>
       <Text style={[styles.label, focused && styles.labelFocused, !!error && styles.labelError]}>
         {label}
       </Text>

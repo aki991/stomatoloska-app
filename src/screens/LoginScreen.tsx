@@ -15,6 +15,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { loginSchema, LoginFormData } from "../schemas/authSchemas";
 import { supabase } from "../services/supabase";
 import { AuthStackNavProp } from "../navigation/types";
@@ -68,7 +69,7 @@ export default function LoginScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Logo + Brand */}
+            {/* Logo + Brand — kompaktan, centriran */}
             <View style={styles.brandSection}>
               <View style={styles.logoWrap}>
                 <Image
@@ -77,7 +78,6 @@ export default function LoginScreen() {
                   resizeMode="contain"
                 />
               </View>
-              <Text style={styles.welcomeSmall}>Dobrodošli u</Text>
               <Text style={styles.appName}>VenusApp</Text>
               <Text style={styles.appSub}>stomatološka ordinacija</Text>
             </View>
@@ -100,6 +100,8 @@ export default function LoginScreen() {
                     onChangeText={onChange}
                     value={value}
                     error={errors.email?.message}
+                    wrapperStyle={styles.inputWrap}
+                    style={styles.inputCompact}
                   />
                 )}
               />
@@ -116,6 +118,8 @@ export default function LoginScreen() {
                     onChangeText={onChange}
                     value={value}
                     error={errors.password?.message}
+                    wrapperStyle={styles.inputWrap}
+                    style={styles.inputCompact}
                   />
                 )}
               />
@@ -141,6 +145,23 @@ export default function LoginScreen() {
                 <Text style={styles.footerLink}>Registrujte se</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ili</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Guest CTA */}
+            <TouchableOpacity
+              style={styles.guestBtn}
+              onPress={() => navigation.navigate("GuestInfo")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="person-outline" size={18} color="#2D7D6E" />
+              <Text style={styles.guestBtnText}>Zakaži kao gost</Text>
+            </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
       </ScreenWrapper>
@@ -151,40 +172,33 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 32, paddingBottom: 40 },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 20 },
 
-  brandSection: { alignItems: "center", marginBottom: 36 },
+  brandSection: { alignItems: "center", marginBottom: 14 },
   logoWrap: {
-    width: 108,
-    height: 108,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
     backgroundColor: "#F5F9F7",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 8,
     shadowColor: "#2D7D6E",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  logo: { width: 80, height: 80, alignSelf: "center" },
-  welcomeSmall: {
-    fontSize: 15,
-    fontWeight: "300",
-    color: "#9CA3AF",
-    letterSpacing: 0.3,
-    marginBottom: 4,
-  },
+  logo: { width: 50, height: 50, alignSelf: "center" },
   appName: {
-    fontSize: 36,
+    fontSize: 20,
     fontWeight: "800",
     color: "#2D7D6E",
-    letterSpacing: -0.5,
-    marginBottom: 4,
+    letterSpacing: -0.3,
+    marginBottom: 1,
   },
   appSub: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "400",
     color: "#9CA3AF",
     letterSpacing: 0.2,
@@ -192,29 +206,67 @@ const styles = StyleSheet.create({
 
   formCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 18,
     borderWidth: 1,
     borderColor: "#F3F4F6",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 4,
-    marginBottom: 24,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 3,
+    marginBottom: 14,
   },
   formTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "800",
     color: "#1A1A1A",
-    letterSpacing: -0.5,
-    marginBottom: 20,
+    letterSpacing: -0.4,
+    marginBottom: 12,
   },
+  inputWrap: { marginBottom: 8 },
+  inputCompact: { paddingVertical: 12, fontSize: 15 },
 
-  forgotRow: { alignItems: "flex-end", marginTop: -4, marginBottom: 20 },
+  forgotRow: { alignItems: "flex-end", marginTop: -2, marginBottom: 12 },
   forgotText: { fontSize: 13, color: "#2D7D6E", fontWeight: "600" },
 
   footer: { flexDirection: "row", justifyContent: "center" },
-  footerText: { fontSize: 14, color: "#9CA3AF", fontWeight: "400" },
-  footerLink: { fontSize: 14, color: "#2D7D6E", fontWeight: "700" },
+  footerText: { fontSize: 13, color: "#9CA3AF", fontWeight: "400" },
+  footerLink: { fontSize: 13, color: "#2D7D6E", fontWeight: "700" },
+
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#E5E7EB" },
+  dividerText: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "500",
+    marginHorizontal: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+
+  guestBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#2D7D6E",
+    backgroundColor: "#FFFFFF",
+  },
+  guestBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2D7D6E",
+    letterSpacing: 0.2,
+  },
 });

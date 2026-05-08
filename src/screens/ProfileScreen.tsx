@@ -4,10 +4,10 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { confirmAlert } from "../utils/alert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -47,19 +47,17 @@ export default function ProfileScreen() {
   const { data: profile, isLoading } = useProfile();
 
   const handleSignOut = () => {
-    Alert.alert("Odjava", "Da li ste sigurni da se želite odjaviti?", [
-      { text: "Otkaži", style: "cancel" },
-      {
-        text: "Odjavi se",
-        style: "destructive",
-        onPress: async () => {
-          if (user?.email) {
-            await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, user.email);
-          }
-          signOut();
-        },
+    confirmAlert(
+      "Odjava",
+      "Da li ste sigurni da se želite odjaviti?",
+      async () => {
+        if (user?.email) {
+          await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, user.email);
+        }
+        signOut();
       },
-    ]);
+      "Odjavi se"
+    );
   };
 
   return (

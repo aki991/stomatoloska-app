@@ -20,6 +20,11 @@ const isExpoGo = Constants.appOwnership === "expo";
 // ─── Token registration ───────────────────────────────────────────────────────
 
 export async function registerPushToken(userId: string): Promise<void> {
+  if (Platform.OS === "web") {
+    console.log("[notifications] Web — push token registration skipped");
+    return;
+  }
+
   if (isExpoGo) {
     console.log("[notifications] Expo Go — push token registration skipped");
     return;

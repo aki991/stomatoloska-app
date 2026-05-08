@@ -29,6 +29,7 @@ import {
   AdminDashboardStackParamList,
   AdminCalendarStackParamList,
 } from "../../navigation/types";
+import { confirmAlert } from "../../utils/alert";
 
 type Props =
   | NativeStackScreenProps<AdminDashboardStackParamList, "AdminAppointmentDetail">
@@ -230,46 +231,31 @@ export default function AdminAppointmentDetailScreen({ route, navigation }: Prop
   const timeLabel = `${format(startsAt, "HH:mm")} – ${format(endsAt, "HH:mm")}`;
 
   const confirmCancel = () => {
-    Alert.alert(
+    confirmAlert(
       "Otkaži termin",
       "Da li ste sigurni da želite da otkažete ovaj termin? Pacijent će biti obavešten.",
-      [
-        { text: "Ne", style: "cancel" },
-        {
-          text: "Otkaži",
-          style: "destructive",
-          onPress: () => setStatusMutation.mutate({ status: "cancelled" }),
-        },
-      ]
+      () => setStatusMutation.mutate({ status: "cancelled" }),
+      "Otkaži",
+      "Ne"
     );
   };
 
   const confirmComplete = () => {
-    Alert.alert(
+    confirmAlert(
       "Označi kao završen",
       "Označiti termin kao uspešno završen?",
-      [
-        { text: "Ne", style: "cancel" },
-        {
-          text: "Da",
-          onPress: () => setStatusMutation.mutate({ status: "completed" }),
-        },
-      ]
+      () => setStatusMutation.mutate({ status: "completed" }),
+      { confirmText: "Da", cancelText: "Ne", destructive: false }
     );
   };
 
   const confirmNoShow = () => {
-    Alert.alert(
+    confirmAlert(
       "Pacijent nije došao",
       "Označiti da se pacijent nije pojavio?",
-      [
-        { text: "Ne", style: "cancel" },
-        {
-          text: "Da",
-          style: "destructive",
-          onPress: () => setStatusMutation.mutate({ status: "no_show" }),
-        },
-      ]
+      () => setStatusMutation.mutate({ status: "no_show" }),
+      "Da",
+      "Ne"
     );
   };
 

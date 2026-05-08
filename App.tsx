@@ -24,13 +24,18 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
 import { queryClient } from "./src/services/queryClient";
 import RootNavigator from "./src/navigation/RootNavigator";
+import { WebContainer } from "./src/components/WebContainer";
+import { ConfirmModalHost } from "./src/components/ConfirmModal";
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="auto" />
-        <RootNavigator />
+        <WebContainer>
+          <RootNavigator />
+        </WebContainer>
+        <ConfirmModalHost />
         <Toast />
       </QueryClientProvider>
     </SafeAreaProvider>

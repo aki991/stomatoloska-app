@@ -25,6 +25,7 @@ import { Service } from "../../types";
 import { GradientButton } from "../../components/GradientButton";
 import { PremiumInput } from "../../components/PremiumInput";
 import { AdminServicesStackParamList } from "../../navigation/types";
+import { confirmAlert } from "../../utils/alert";
 
 type Props = NativeStackScreenProps<AdminServicesStackParamList, "EditService">;
 
@@ -104,6 +105,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   const { data: categories = PRESET_CATEGORIES } = useCategories();
 
   const [showCustomInput, setShowCustomInput] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     control,
@@ -197,42 +199,74 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc("delete_service", { service_uuid: serviceId! });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "services"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "booking-services"] });
-      Toast.show({ type: "success", text1: "Usluga obrisana" });
-      navigation.goBack();
-    },
-    onError: (err: any) => {
-      const msg = err.message ?? "Greška pri brisanju usluge";
-      if (msg.toLowerCase().includes("future confirmed")) {
-        Alert.alert(
-          "Nije moguće obrisati",
-          "Postoje budući potvrđeni termini za ovu uslugu. Otkažite ih pre brisanja."
-        );
-      } else {
-        Alert.alert("Greška", msg);
-      }
-    },
-  });
-
-  const confirmDelete = () => {
-    Alert.alert(
+  const handleDelete = () => {
+    confirmAlert(
       "Trajno obriši uslugu",
       `Da li ste sigurni da želite da trajno obrišete uslugu "${service?.name}"? Ova akcija se ne može poništiti.`,
-      [
-        { text: "Otkaži", style: "cancel" },
-        {
-          text: "Obriši",
-          style: "destructive",
-          onPress: () => deleteMutation.mutate(),
-        },
-      ]
+      async () => {
+        setIsDeleting(true);
+        try {
+          const { error } = await supabase.rpc("delete_service", {
+            service_uuid: serviceId!,
+          });
+
+          if (error) {
+            const msg = error.message ?? "";
+            if (msg.includes("Cannot delete service with future")) {
+              Toast.show({
+                type: "error",
+                text1: "Brisanje nije moguće",
+                text2:
+                  "Postoje predstojeći termini sa ovom uslugom. Otkažite ih ili samo deaktivirajte uslugu.",
+                visibilityTime: 5000,
+              });
+            } else if (msg.includes("Only admins")) {
+              Toast.show({
+                type: "error",
+                text1: "Samo administrator može da briše usluge",
+                visibilityTime: 5000,
+              });
+            } else {
+              Toast.show({
+                type: "error",
+                text1: "Greška pri brisanju usluge",
+                text2: msg || "Pokušajte ponovo.",
+                visibilityTime: 5000,
+              });
+            }
+            return; // do not navigate away on error
+          }
+
+          // Invalidate every cache that lists services so the deleted row
+          // disappears on whichever screen the user lands on next.
+          queryClient.invalidateQueries({ queryKey: ["admin", "services"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "booking-services"] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "service", serviceId] });
+          queryClient.invalidateQueries({ queryKey: ["admin", "categories"] });
+          queryClient.invalidateQueries({ queryKey: ["services"] });
+          queryClient.invalidateQueries({ queryKey: ["guest", "services"] });
+
+          Toast.show({ type: "success", text1: "Usluga je trajno obrisana" });
+
+          // popToTop is more robust than goBack() on web in case the back-stack
+          // got desynced; the navigate fallback covers the empty-stack case.
+          if (navigation.canGoBack()) {
+            navigation.popToTop();
+          } else {
+            navigation.navigate("ServicesMain");
+          }
+        } catch (e: any) {
+          Toast.show({
+            type: "error",
+            text1: "Neočekivana greška",
+            text2: e?.message ?? undefined,
+            visibilityTime: 5000,
+          });
+        } finally {
+          setIsDeleting(false);
+        }
+      },
+      "Obriši"
     );
   };
 
@@ -260,17 +294,11 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   const confirmToggleActive = () => {
     const currentlyActive = service?.is_active ?? true;
     if (currentlyActive) {
-      Alert.alert(
+      confirmAlert(
         "Deaktiviraj uslugu",
         "Usluga neće biti vidljiva pacijentima, ali postojeći termini ostaju netaknuti.",
-        [
-          { text: "Otkaži", style: "cancel" },
-          {
-            text: "Deaktiviraj",
-            style: "destructive",
-            onPress: () => toggleActiveMutation.mutate(false),
-          },
-        ]
+        () => toggleActiveMutation.mutate(false),
+        "Deaktiviraj"
       );
     } else {
       toggleActiveMutation.mutate(true);
@@ -442,6 +470,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
             label="Sačuvaj uslugu"
             onPress={handleSubmit((data) => saveMutation.mutate(data))}
             loading={saveMutation.isPending}
+            disabled={isDeleting}
             style={{ marginTop: 8, marginBottom: isEditing ? 12 : 0 }}
           />
 
@@ -454,7 +483,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
                   !isActive && styles.toggleActiveBtnGreen,
                 ]}
                 onPress={confirmToggleActive}
-                disabled={toggleActiveMutation.isPending}
+                disabled={toggleActiveMutation.isPending || isDeleting}
               >
                 {toggleActiveMutation.isPending ? (
                   <ActivityIndicator
@@ -482,10 +511,10 @@ export default function EditServiceScreen({ route, navigation }: Props) {
 
               <TouchableOpacity
                 style={styles.deleteBtn}
-                onPress={confirmDelete}
-                disabled={deleteMutation.isPending}
+                onPress={handleDelete}
+                disabled={isDeleting}
               >
-                {deleteMutation.isPending ? (
+                {isDeleting ? (
                   <ActivityIndicator size="small" color="#DC2626" />
                 ) : (
                   <>
