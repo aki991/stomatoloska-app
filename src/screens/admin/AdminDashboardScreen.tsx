@@ -55,7 +55,7 @@ function patientDisplay(a: AdminAppointmentRow): string {
       .trim();
     return name || "Pacijent";
   }
-  if (a.walk_in_name) return `${a.walk_in_name} (walk-in)`;
+  if (a.walk_in_name) return `${a.walk_in_name} (bez naloga)`;
   return "Nepoznat pacijent";
 }
 
@@ -126,7 +126,7 @@ export default function AdminDashboardScreen() {
       duration: 100,
       useNativeDriver: true,
     }).start();
-  const onFabPress = () => navigation.navigate("AdminBooking");
+  const onFabPress = () => navigation.navigate("AdminBookingPatient");
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>

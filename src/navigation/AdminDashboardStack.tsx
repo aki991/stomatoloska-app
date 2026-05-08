@@ -3,7 +3,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AdminDashboardStackParamList } from "./types";
 import AdminDashboardScreen from "../screens/admin/AdminDashboardScreen";
 import AdminAppointmentDetailScreen from "../screens/admin/AdminAppointmentDetailScreen";
-import { AdminBookingPlaceholder } from "../screens/admin/AdminPlaceholderScreen";
+import AdminBookingPatientStep from "../screens/admin/booking/AdminBookingPatientStep";
+import AdminBookingServiceStep from "../screens/admin/booking/AdminBookingServiceStep";
+import AdminBookingDateStep from "../screens/admin/booking/AdminBookingDateStep";
+import AdminBookingTimeStep from "../screens/admin/booking/AdminBookingTimeStep";
+import AdminBookingConfirmStep from "../screens/admin/booking/AdminBookingConfirmStep";
 
 const Stack = createNativeStackNavigator<AdminDashboardStackParamList>();
 
@@ -29,9 +33,29 @@ export default function AdminDashboardStack() {
         options={{ title: "Detalji termina" }}
       />
       <Stack.Screen
-        name="AdminBooking"
-        component={AdminBookingPlaceholder}
-        options={{ title: "Zakaži termin" }}
+        name="AdminBookingPatient"
+        component={AdminBookingPatientStep}
+        options={{ title: "Zakaži — Pacijent" }}
+      />
+      <Stack.Screen
+        name="AdminBookingService"
+        component={AdminBookingServiceStep}
+        options={{ title: "Zakaži — Usluga" }}
+      />
+      <Stack.Screen
+        name="AdminBookingDate"
+        component={AdminBookingDateStep}
+        options={{ title: "Zakaži — Datum" }}
+      />
+      <Stack.Screen
+        name="AdminBookingTime"
+        component={AdminBookingTimeStep}
+        options={{ title: "Zakaži — Vreme" }}
+      />
+      <Stack.Screen
+        name="AdminBookingConfirm"
+        component={AdminBookingConfirmStep}
+        options={{ title: "Potvrdi termin" }}
       />
     </Stack.Navigator>
   );

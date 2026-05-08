@@ -71,7 +71,46 @@ export type AdminTabParamList = {
 export type AdminDashboardStackParamList = {
   DashboardMain: undefined;
   AdminAppointmentDetail: { appointmentId: string };
-  AdminBooking: undefined;
+  // ── Admin booking flow (5 steps) ──────────────────────────────────────────
+  AdminBookingPatient: undefined;
+  AdminBookingService: {
+    patientId: string | null;
+    patientName: string;
+    walkInPhone?: string;
+  };
+  AdminBookingDate: {
+    patientId: string | null;
+    patientName: string;
+    walkInPhone?: string;
+    serviceId: string;
+    serviceName: string;
+    durationMinutes: number;
+    price: number;
+    existingAppointmentId?: string;
+  };
+  AdminBookingTime: {
+    patientId: string | null;
+    patientName: string;
+    walkInPhone?: string;
+    serviceId: string;
+    serviceName: string;
+    durationMinutes: number;
+    price: number;
+    selectedDate: string;
+    existingAppointmentId?: string;
+  };
+  AdminBookingConfirm: {
+    patientId: string | null;
+    patientName: string;
+    walkInPhone?: string;
+    serviceId: string;
+    serviceName: string;
+    durationMinutes: number;
+    price: number;
+    selectedDate: string;
+    selectedTime: string;
+    existingAppointmentId?: string;
+  };
 };
 
 export type AdminCalendarStackParamList = {

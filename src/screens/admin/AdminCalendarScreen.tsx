@@ -24,7 +24,6 @@ import { supabase } from "../../services/supabase";
 import {
   Appointment,
   Service,
-  WorkingHours,
 } from "../../types";
 import { StatusBadge } from "../../components/StatusBadge";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -74,18 +73,6 @@ function statusFamily(s: Appointment["status"]): StatusFilter {
   return "confirmed"; // pending + confirmed
 }
 
-function useWorkingHours() {
-  return useQuery<WorkingHours[]>({
-    queryKey: ["working_hours"],
-    queryFn: async () => {
-      const r = await supabase.from("working_hours").select("*");
-      if (r.error) throw r.error;
-      return r.data ?? [];
-    },
-    staleTime: 1000 * 60 * 60,
-  });
-}
-
 function useMonthAppointments(monthKey: string) {
   return useQuery<AdminAppointmentRow[]>({
     queryKey: ["admin", "month-appointments", monthKey],
@@ -121,7 +108,6 @@ export default function AdminCalendarScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [refreshing, setRefreshing] = useState(false);
 
-  const whQ = useWorkingHours();
   const apptQ = useMonthAppointments(visibleMonth);
 
   useFocusEffect(
@@ -141,53 +127,28 @@ export default function AdminCalendarScreen() {
     return map;
   }, [apptQ.data]);
 
-  // Build markedDates: dots for status families + disabled for closed days + selected highlight
+  // Build markedDates: dots for status families + selected highlight.
+  // No days are disabled — admin can view appointments on any date.
   const markedDates = useMemo(() => {
     const out: Record<string, any> = {};
 
-    // Closed days from working_hours (60 days forward + 30 back covers visible window)
-    if (whQ.data && whQ.data.length > 0) {
-      const closedDays = new Set(
-        whQ.data.filter((wh) => wh.is_closed).map((wh) => wh.day_of_week)
-      );
-      const cursor = startOfMonth(addMonths(parseISO(`${visibleMonth}-01`), -1));
-      const limit = endOfMonth(addMonths(parseISO(`${visibleMonth}-01`), 1));
-      const c = new Date(cursor);
-      while (c <= limit) {
-        if (closedDays.has(c.getDay())) {
-          out[dateKey(c)] = {
-            disabled: true,
-            disableTouchEvent: true,
-          };
-        }
-        c.setDate(c.getDate() + 1);
-      }
-    }
-
-    // Dots per date
     for (const [k, list] of byDate.entries()) {
-      const families = new Set<StatusFilter>(
-        list.map((a) => statusFamily(a.status))
-      );
+      const families = new Set<StatusFilter>(list.map((a) => statusFamily(a.status)));
       const dots: { key: string; color: string }[] = [];
       if (families.has("confirmed")) dots.push({ key: "c", color: PRIMARY });
       if (families.has("cancelled")) dots.push({ key: "x", color: RED });
       if (families.has("completed")) dots.push({ key: "d", color: GRAY });
-      out[k] = { ...(out[k] ?? {}), dots, marked: true };
+      out[k] = { dots, marked: true };
     }
 
-    // Selected
     out[selectedDate] = {
       ...(out[selectedDate] ?? {}),
       selected: true,
       selectedColor: PRIMARY,
-      // even if the day was closed, allow viewing existing appointments
-      disabled: false,
-      disableTouchEvent: false,
     };
 
     return out;
-  }, [byDate, whQ.data, selectedDate, visibleMonth]);
+  }, [byDate, selectedDate]);
 
   // Day list (filtered)
   const dayList = useMemo(() => {
@@ -201,9 +162,9 @@ export default function AdminCalendarScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([whQ.refetch(), apptQ.refetch()]);
+    await apptQ.refetch();
     setRefreshing(false);
-  }, [whQ, apptQ]);
+  }, [apptQ]);
 
   const selectedDateLabelRaw = format(parseISO(selectedDate), "EEEE, d. MMMM yyyy", {
     locale: sr,

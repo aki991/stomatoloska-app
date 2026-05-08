@@ -1,5 +1,23 @@
 import "./global.css";
 import React from "react";
+import { LocaleConfig } from "react-native-calendars";
+
+LocaleConfig.locales["sr"] = {
+  monthNames: [
+    "Januar", "Februar", "Mart", "April", "Maj", "Jun",
+    "Jul", "Avgust", "Septembar", "Oktobar", "Novembar", "Decembar",
+  ],
+  monthNamesShort: [
+    "Jan", "Feb", "Mar", "Apr", "Maj", "Jun",
+    "Jul", "Avg", "Sep", "Okt", "Nov", "Dec",
+  ],
+  dayNames: [
+    "Nedelja", "Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak", "Subota",
+  ],
+  dayNamesShort: ["Ned", "Pon", "Uto", "Sre", "Čet", "Pet", "Sub"],
+  today: "Danas",
+};
+LocaleConfig.defaultLocale = "sr";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";

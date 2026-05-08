@@ -98,17 +98,22 @@ function buildDisabledDates(
     }
   }
 
-  // Today: even if the clinic is open, disable if no slot fits before close.
-  // Mirrors the 2h booking buffer used in TimeSelectionScreen.
+  // Today: disable if no slot starting at now+60min or later can end by closes_at.
+  // Condition: closes_at - duration < now + 60  →  no valid slot exists.
   const now = new Date();
   const todayKey = format(now, "yyyy-MM-dd");
-  const todayHours = workingHours.find((wh) => wh.day_of_week === now.getDay());
-  if (!disabled[todayKey] && todayHours && !todayHours.is_closed) {
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const earliestStart = Math.max(toMin(todayHours.opens_at), nowMin + 120);
-    const latestStart = toMin(todayHours.closes_at) - durationMin;
-    if (latestStart < earliestStart) {
-      disabled[todayKey] = mark;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (!disabled[todayKey]) {
+    const todayHours = workingHours.find((wh) => wh.day_of_week === now.getDay());
+    if (todayHours && !todayHours.is_closed) {
+      const closesMin = toMin(todayHours.closes_at);
+      // Latest slot start that still ends within working hours
+      const latestSlotStart = closesMin - durationMin;
+      // Earliest slot start patient can book (1h buffer from now)
+      const earliestSlotStart = nowMin + 60;
+      if (latestSlotStart < earliestSlotStart) {
+        disabled[todayKey] = mark;
+      }
     }
   }
 
@@ -177,6 +182,7 @@ export default function DateSelectionScreen({ route, navigation }: Props) {
           markedDates={markedDates}
           onDayPress={onDayPress}
           enableSwipeMonths
+          firstDay={1}
           theme={{
             backgroundColor: "#F9FAFB",
             calendarBackground: "#F9FAFB",

@@ -1,10 +1,8 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AdminServicesStackParamList } from "./types";
-import {
-  AdminServicesPlaceholder,
-  AdminPlaceholder,
-} from "../screens/admin/AdminPlaceholderScreen";
+import AdminServicesScreen from "../screens/admin/AdminServicesScreen";
+import EditServiceScreen from "../screens/admin/EditServiceScreen";
 
 const Stack = createNativeStackNavigator<AdminServicesStackParamList>();
 
@@ -16,21 +14,17 @@ const headerStyle = {
   contentStyle: { backgroundColor: "#F9FAFB" },
 };
 
-function EditServicePlaceholder() {
-  return <AdminPlaceholder title="Uređivanje usluge" phase="Fazi 3" />;
-}
-
 export default function AdminServicesStack() {
   return (
     <Stack.Navigator screenOptions={headerStyle}>
       <Stack.Screen
         name="ServicesMain"
-        component={AdminServicesPlaceholder}
+        component={AdminServicesScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
         name="EditService"
-        component={EditServicePlaceholder}
+        component={EditServiceScreen}
         options={{ title: "Usluga" }}
       />
     </Stack.Navigator>

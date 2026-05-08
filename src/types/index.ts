@@ -16,10 +16,11 @@ export interface Service {
   id: string;
   name: string;
   description: string | null;
-  category?: string | null;
+  category: string;
   duration_minutes: number;
   price: number;
   is_active: boolean;
+  display_order: number;
 }
 
 export interface Appointment {

@@ -146,7 +146,7 @@ export default function AdminAppointmentDetailScreen({ route, navigation }: Prop
             : vars.status === "completed"
             ? "Termin označen kao završen"
             : vars.status === "no_show"
-            ? "Označeno kao no-show"
+            ? "Pacijent nije došao"
             : "Status ažuriran",
       });
     },
@@ -260,7 +260,7 @@ export default function AdminAppointmentDetailScreen({ route, navigation }: Prop
 
   const confirmNoShow = () => {
     Alert.alert(
-      "No-show",
+      "Pacijent nije došao",
       "Označiti da se pacijent nije pojavio?",
       [
         { text: "Ne", style: "cancel" },
@@ -274,10 +274,26 @@ export default function AdminAppointmentDetailScreen({ route, navigation }: Prop
   };
 
   const onReschedule = () => {
-    Alert.alert(
-      "Pomeranje termina",
-      "Stiže u Fazi 4 — kroz isti booking flow kao novi termin."
-    );
+    if (!appt.service) {
+      Alert.alert("Greška", "Usluga nije dostupna za pomeranje termina.");
+      return;
+    }
+    // AdminBookingDate lives in AdminDashboardStack (Dashboard tab).
+    // Navigate to the Dashboard tab first, then push the booking screen within it.
+    // This works whether we're currently in the Dashboard or Calendar stack.
+    (navigation as any).navigate("Dashboard", {
+      screen: "AdminBookingDate",
+      params: {
+        patientId: appt.patient?.id ?? null,
+        patientName,
+        walkInPhone: appt.walk_in_phone ?? undefined,
+        serviceId: appt.service.id,
+        serviceName: appt.service.name,
+        durationMinutes: appt.service.duration_minutes,
+        price: appt.service.price,
+        existingAppointmentId: appointmentId,
+      },
+    });
   };
 
   return (
@@ -432,7 +448,7 @@ export default function AdminAppointmentDetailScreen({ route, navigation }: Prop
                 disabled={setStatusMutation.isPending}
               >
                 <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
-                <Text style={styles.dangerBtnText}>Označi no-show</Text>
+                <Text style={styles.dangerBtnText}>Pacijent nije došao</Text>
               </TouchableOpacity>
             </>
           )}
@@ -466,7 +482,7 @@ export default function AdminAppointmentDetailScreen({ route, navigation }: Prop
               <Text style={styles.infoText}>
                 {appt.status === "completed"
                   ? "Termin je uspešno završen."
-                  : "Pacijent se nije pojavio (no-show)."}
+                  : "Pacijent se nije pojavio."}
               </Text>
             </View>
           )}

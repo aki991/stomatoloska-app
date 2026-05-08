@@ -86,10 +86,10 @@ function isSlotAvailable(
   const slotStart = toMin(slotTime);
   const slotEnd = slotStart + durationMin;
 
-  // Block slots in the past + 2h buffer when selected date is today
+  // Block slots in the past + 1h buffer when selected date is today
   if (selectedDate === format(new Date(), "yyyy-MM-dd")) {
     const nowMin =
-      new Date().getHours() * 60 + new Date().getMinutes() + 120;
+      new Date().getHours() * 60 + new Date().getMinutes() + 60;
     if (slotStart < nowMin) return false;
   }
 
